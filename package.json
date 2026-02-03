@@ -1,0 +1,30 @@
+{
+  "name": "traffic-monitor-app",
+  "version": "1.0.0",
+  "description": "Real-time traffic monitoring app that notifies when traffic builds up or clears",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:dev": "nodemon --exec ts-node src/index.ts"
+  },
+  "keywords": [
+    "traffic",
+    "monitoring",
+    "google-maps",
+    "notifications"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
