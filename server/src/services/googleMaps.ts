@@ -17,7 +17,7 @@ export class GoogleMapsService {
             const params = {
                 origin: `${origin.lat},${origin.long}`,
                 destination: `${destination.lat},${destination.long}`,
-                departure_time: 'now', // Critical: enables traffic data
+                departure_time: 'now', // enables traffic data
                 key: this.apiKey,
             };
 
@@ -26,7 +26,7 @@ export class GoogleMapsService {
                 { params }
             );
 
-            // Fixed: Check status properly
+            // Check status properly
             if (response.data.status !== 'OK' || !response.data.routes?.length) {
                 throw new Error(`Google Maps API error: ${response.data.status || 'Unknown error'}`);
             }
