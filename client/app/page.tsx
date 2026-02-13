@@ -10,7 +10,7 @@ import { Navigation, MapPin, Home, Bell, Settings, RefreshCw } from 'lucide-reac
 import dynamic from 'next/dynamic'
 
 // Dynamically import map component (Leaflet doesn't work with SSR)
-const TrafficMap = dynamic(() => import('@/components/traffic-map'), {
+const TrafficMap = dynamic(() => import('@/components/TrafficMap'), {
   ssr: false,
   loading: () => <div className="h-[400px] bg-muted animate-pulse rounded-lg" />,
 })
@@ -37,12 +37,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (latestUpdate && latestUpdate.userId === userId) {
       setTrafficCondition(latestUpdate.condition)
-      
+
       if (latestUpdate.notification) {
         const message = latestUpdate.notification.type === 'start_getting_cozy'
           ? `🟡 Traffic building up! ETA: ${latestUpdate.notification.currentETA} (${latestUpdate.notification.delay} delay)`
           : `🟢 Traffic clearing! ETA: ${latestUpdate.notification.currentETA}`
-        
+
         setNotifications(prev => [
           {
             time: new Date().toLocaleTimeString(),
@@ -65,7 +65,7 @@ export default function Dashboard() {
         notificationThreshold,
       })
       setIsSessionActive(true)
-      
+
       // Get initial traffic
       const traffic = await trafficApi.getTraffic(userId)
       setTrafficCondition(traffic)
@@ -96,7 +96,7 @@ export default function Dashboard() {
   const updateCurrentLocationManually = async (newLat: number, newLong: number) => {
     const newLocation = { lat: newLat, long: newLong }
     setCurrentLocation(newLocation)
-    
+
     if (isSessionActive) {
       try {
         await trafficApi.updateLocation(userId, newLocation)
@@ -112,7 +112,7 @@ export default function Dashboard() {
       bookey: 'bookey' as const,
       "GG's": 'ggs' as const,
     }
-    
+
     const icons = {
       calm: '🟢',
       bookey: '🟡',
@@ -140,18 +140,18 @@ export default function Dashboard() {
               Real-time traffic monitoring to your home
             </p>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               {isConnected ? (
                 <><span className="h-3 w-3 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Connected</span></>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Connected</span></>
               ) : (
                 <><span className="h-3 w-3 bg-red-500 rounded-full" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Disconnected</span></>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Disconnected</span></>
               )}
             </div>
-            
+
             {isSessionActive ? (
               <Button onClick={stopMonitoring} variant="destructive">
                 Stop Monitoring

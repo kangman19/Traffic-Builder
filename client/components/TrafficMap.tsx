@@ -79,7 +79,7 @@ export default function TrafficMap({ currentLocation, homeLocation, trafficStatu
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      
+
       {/* Route line */}
       <Polyline
         positions={routeCoords}
@@ -87,7 +87,7 @@ export default function TrafficMap({ currentLocation, homeLocation, trafficStatu
         weight={4}
         opacity={0.7}
       />
-      
+
       {/* Current location marker */}
       <Marker position={[currentLocation.lat, currentLocation.long]} icon={currentIcon}>
         <Popup>
@@ -96,7 +96,7 @@ export default function TrafficMap({ currentLocation, homeLocation, trafficStatu
           {currentLocation.lat.toFixed(4)}, {currentLocation.long.toFixed(4)}
         </Popup>
       </Marker>
-      
+
       {/* Home location marker */}
       <Marker position={[homeLocation.lat, homeLocation.long]} icon={homeIcon}>
         <Popup>
