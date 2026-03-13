@@ -70,6 +70,7 @@ export default function TrafficMap({ currentLocation, homeLocation, trafficStatu
 
   return (
     <MapContainer
+      key={`${currentLocation.lat}-${currentLocation.long}-${homeLocation.lat}-${homeLocation.long}`}
       center={center}
       zoom={12}
       style={{ height: '100%', width: '100%' }}
