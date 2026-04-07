@@ -134,7 +134,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
               <Navigation className="h-10 w-10 text-blue-600" />
-              Traffic Monitor
+              Traffic Builder
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
               Real-time traffic monitoring to your home
@@ -175,9 +175,10 @@ export default function Dashboard() {
                   <span>Current Traffic Status</span>
                   <Button
                     onClick={refreshTraffic}
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     disabled={!isSessionActive}
+                    className="text-white hover:bg-white/20 hover:text-white"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Refresh
@@ -250,6 +251,11 @@ export default function Dashboard() {
                     currentLocation={currentLocation}
                     homeLocation={homeLocation}
                     trafficStatus={trafficCondition?.status || 'calm'}
+                    onCurrentLocationChange={(lat, long) => updateCurrentLocationManually(lat, long)}
+                    onHomeLocationChange={(lat, long) => {
+                      if (!isSessionActive) setHomeLocation({ lat, long })
+                    }}
+                    isSessionActive={isSessionActive}
                   />
                 </div>
               </CardContent>
@@ -271,9 +277,9 @@ export default function Dashboard() {
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {notifications.length > 0 ? (
                     notifications.map((notif, idx) => (
-                      <div key={idx} className="p-3 bg-muted rounded-lg">
-                        <p className="text-xs text-muted-foreground">{notif.time}</p>
-                        <p className="text-sm mt-1">{notif.message}</p>
+                      <div key={idx} className="p-3 bg-gray-100 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{notif.time}</p>
+                        <p className="text-sm mt-1 font-medium text-gray-900 dark:text-gray-100">{notif.message}</p>
                       </div>
                     ))
                   ) : (
@@ -305,7 +311,7 @@ export default function Dashboard() {
                       step="0.0001"
                       value={homeLocation.lat}
                       onChange={(e) => setHomeLocation({ ...homeLocation, lat: parseFloat(e.target.value) })}
-                      className="px-3 py-2 border rounded-md text-sm"
+                      className="px-3 py-2 border rounded-md text-sm font-semibold text-gray-900 dark:text-gray-100 dark:bg-gray-800"
                       placeholder="Latitude"
                       disabled={isSessionActive}
                     />
@@ -314,7 +320,7 @@ export default function Dashboard() {
                       step="0.0001"
                       value={homeLocation.long}
                       onChange={(e) => setHomeLocation({ ...homeLocation, long: parseFloat(e.target.value) })}
-                      className="px-3 py-2 border rounded-md text-sm"
+                      className="px-3 py-2 border rounded-md text-sm font-semibold text-gray-900 dark:text-gray-100 dark:bg-gray-800"
                       placeholder="Longitude"
                       disabled={isSessionActive}
                     />
@@ -332,7 +338,7 @@ export default function Dashboard() {
                       step="0.0001"
                       value={currentLocation.lat}
                       onChange={(e) => updateCurrentLocationManually(parseFloat(e.target.value), currentLocation.long)}
-                      className="px-3 py-2 border rounded-md text-sm"
+                      className="px-3 py-2 border rounded-md text-sm font-semibold text-gray-900 dark:text-gray-100 dark:bg-gray-800"
                       placeholder="Latitude"
                     />
                     <input
@@ -340,7 +346,7 @@ export default function Dashboard() {
                       step="0.0001"
                       value={currentLocation.long}
                       onChange={(e) => updateCurrentLocationManually(currentLocation.lat, parseFloat(e.target.value))}
-                      className="px-3 py-2 border rounded-md text-sm"
+                      className="px-3 py-2 border rounded-md text-sm font-semibold text-gray-900 dark:text-gray-100 dark:bg-gray-800"
                       placeholder="Longitude"
                     />
                   </div>

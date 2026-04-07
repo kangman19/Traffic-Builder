@@ -1,6 +1,6 @@
 'use client'
 
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useEffect, useState } from 'react'
@@ -36,10 +36,42 @@ interface TrafficMapProps {
   currentLocation: { lat: number; long: number }
   homeLocation: { lat: number; long: number }
   trafficStatus: 'calm' | 'bookey' | "GG's"
+  onCurrentLocationChange?: (lat: number, long: number) => void
+  onHomeLocationChange?: (lat: number, long: number) => void
+  isSessionActive?: boolean
 }
 
-export default function TrafficMap({ currentLocation, homeLocation, trafficStatus }: TrafficMapProps) {
+function MapUpdater({ currentLocation, homeLocation }: { currentLocation: {lat: number, long: number}, homeLocation: {lat: number, long: number} }) {
+  const map = useMap()
+  useEffect(() => {
+    const bounds = L.latLngBounds([
+      [currentLocation.lat, currentLocation.long],
+      [homeLocation.lat, homeLocation.long]
+    ])
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true })
+  }, [currentLocation.lat, currentLocation.long, homeLocation.lat, homeLocation.long, map])
+  return null
+}
+
+function MapEvents({ setClickedPos }: { setClickedPos: (pos: L.LatLng | null) => void }) {
+  useMapEvents({
+    click(e) {
+      setClickedPos(e.latlng)
+    }
+  })
+  return null
+}
+
+export default function TrafficMap({ 
+  currentLocation, 
+  homeLocation, 
+  trafficStatus,
+  onCurrentLocationChange,
+  onHomeLocationChange,
+  isSessionActive
+}: TrafficMapProps) {
   const [isMounted, setIsMounted] = useState(false)
+  const [clickedPos, setClickedPos] = useState<L.LatLng | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -70,12 +102,41 @@ export default function TrafficMap({ currentLocation, homeLocation, trafficStatu
 
   return (
     <MapContainer
-      key={`${currentLocation.lat}-${currentLocation.long}-${homeLocation.lat}-${homeLocation.long}`}
       center={center}
       zoom={12}
       style={{ height: '100%', width: '100%' }}
       className="rounded-lg"
     >
+      <MapUpdater currentLocation={currentLocation} homeLocation={homeLocation} />
+      <MapEvents setClickedPos={setClickedPos} />
+
+      {clickedPos && (
+        <Popup position={clickedPos} eventHandlers={{ remove: () => setClickedPos(null) }}>
+          <div className="flex flex-col gap-2 p-1">
+            <strong className="text-sm border-b pb-1">Set Location Here</strong>
+            <button 
+              className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+              onClick={() => {
+                onCurrentLocationChange?.(clickedPos.lat, clickedPos.lng)
+                setClickedPos(null)
+              }}
+            >
+              📍 Set Current Location
+            </button>
+            <button 
+              className="px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSessionActive}
+              onClick={() => {
+                onHomeLocationChange?.(clickedPos.lat, clickedPos.lng)
+                setClickedPos(null)
+              }}
+            >
+              🏠 Set Home Location
+            </button>
+          </div>
+        </Popup>
+      )}
+
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -90,20 +151,48 @@ export default function TrafficMap({ currentLocation, homeLocation, trafficStatu
       />
 
       {/* Current location marker */}
-      <Marker position={[currentLocation.lat, currentLocation.long]} icon={currentIcon}>
+      <Marker 
+        position={[currentLocation.lat, currentLocation.long]} 
+        icon={currentIcon}
+        draggable={true}
+        eventHandlers={{
+          dragend: (e) => {
+            const position = e.target.getLatLng()
+            onCurrentLocationChange?.(position.lat, position.lng)
+          }
+        }}
+      >
         <Popup>
           <strong>Your Current Location</strong>
           <br />
           {currentLocation.lat.toFixed(4)}, {currentLocation.long.toFixed(4)}
+          <br />
+          <span className="text-xs text-black/60 italic">Drag to move pin</span>
         </Popup>
       </Marker>
 
       {/* Home location marker */}
-      <Marker position={[homeLocation.lat, homeLocation.long]} icon={homeIcon}>
+      <Marker 
+        position={[homeLocation.lat, homeLocation.long]} 
+        icon={homeIcon}
+        draggable={!isSessionActive}
+        eventHandlers={{
+          dragend: (e) => {
+            const position = e.target.getLatLng()
+            onHomeLocationChange?.(position.lat, position.lng)
+          }
+        }}
+      >
         <Popup>
           <strong>🏠 Home</strong>
           <br />
           {homeLocation.lat.toFixed(4)}, {homeLocation.long.toFixed(4)}
+          {!isSessionActive && (
+            <>
+              <br />
+              <span className="text-xs text-black/60 italic">Drag to move pin</span>
+            </>
+          )}
         </Popup>
       </Marker>
     </MapContainer>
