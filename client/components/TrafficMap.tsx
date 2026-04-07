@@ -41,7 +41,7 @@ interface TrafficMapProps {
   isSessionActive?: boolean
 }
 
-function MapUpdater({ currentLocation, homeLocation }: { currentLocation: {lat: number, long: number}, homeLocation: {lat: number, long: number} }) {
+function MapUpdater({ currentLocation, homeLocation }: { currentLocation: { lat: number, long: number }, homeLocation: { lat: number, long: number } }) {
   const map = useMap()
   useEffect(() => {
     const bounds = L.latLngBounds([
@@ -62,9 +62,9 @@ function MapEvents({ setClickedPos }: { setClickedPos: (pos: L.LatLng | null) =>
   return null
 }
 
-export default function TrafficMap({ 
-  currentLocation, 
-  homeLocation, 
+export default function TrafficMap({
+  currentLocation,
+  homeLocation,
   trafficStatus,
   onCurrentLocationChange,
   onHomeLocationChange,
@@ -114,7 +114,7 @@ export default function TrafficMap({
         <Popup position={clickedPos} eventHandlers={{ remove: () => setClickedPos(null) }}>
           <div className="flex flex-col gap-2 p-1">
             <strong className="text-sm border-b pb-1">Set Location Here</strong>
-            <button 
+            <button
               className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
               onClick={() => {
                 onCurrentLocationChange?.(clickedPos.lat, clickedPos.lng)
@@ -123,7 +123,7 @@ export default function TrafficMap({
             >
               📍 Set Current Location
             </button>
-            <button 
+            <button
               className="px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSessionActive}
               onClick={() => {
@@ -151,8 +151,8 @@ export default function TrafficMap({
       />
 
       {/* Current location marker */}
-      <Marker 
-        position={[currentLocation.lat, currentLocation.long]} 
+      <Marker
+        position={[currentLocation.lat, currentLocation.long]}
         icon={currentIcon}
         draggable={true}
         eventHandlers={{
@@ -172,8 +172,8 @@ export default function TrafficMap({
       </Marker>
 
       {/* Home location marker */}
-      <Marker 
-        position={[homeLocation.lat, homeLocation.long]} 
+      <Marker
+        position={[homeLocation.lat, homeLocation.long]}
         icon={homeIcon}
         draggable={!isSessionActive}
         eventHandlers={{

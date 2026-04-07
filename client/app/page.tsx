@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useTrafficSocket } from '@/hooks/use-traffic-socket'
 import { trafficApi, type Location, type TrafficCondition } from '@/lib/api'
-import { Navigation, MapPin, Home, Bell, Settings, RefreshCw } from 'lucide-react'
+import { Navigation, MapPin, Home, Bell, Settings, RefreshCw, LocateFixed } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
 // Dynamically import map component (Leaflet doesn't work with SSR)
@@ -30,8 +30,25 @@ export default function Dashboard() {
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [notifications, setNotifications] = useState<Array<{ time: string; message: string; type: string }>>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'detecting' | 'found' | 'denied'>('idle')
 
   const { isConnected, latestUpdate, requestTrafficCheck } = useTrafficSocket()
+
+  // Silently detect real location on mount; LA coords remain active as fallback
+  const detectLocation = useCallback(() => {
+    if (!navigator.geolocation) return
+    setGpsStatus('detecting')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCurrentLocation({ lat: pos.coords.latitude, long: pos.coords.longitude })
+        setGpsStatus('found')
+      },
+      () => setGpsStatus('denied'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    )
+  }, [])
+
+  useEffect(() => { detectLocation() }, [detectLocation])
 
   // Handle WebSocket updates
   useEffect(() => {
@@ -331,6 +348,9 @@ export default function Dashboard() {
                   <label className="text-sm font-medium flex items-center gap-2 mb-2">
                     <MapPin className="h-4 w-4" />
                     Current Location
+                    {gpsStatus === 'detecting' && <span className="text-xs text-blue-500 font-normal animate-pulse">detecting…</span>}
+                    {gpsStatus === 'found' && <span className="text-xs text-green-500 font-normal">● GPS</span>}
+                    {gpsStatus === 'denied' && <span className="text-xs text-amber-500 font-normal">(permission denied)</span>}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -350,6 +370,14 @@ export default function Dashboard() {
                       placeholder="Longitude"
                     />
                   </div>
+                  <button
+                    onClick={detectLocation}
+                    disabled={gpsStatus === 'detecting'}
+                    className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-40"
+                  >
+                    <LocateFixed className="h-3 w-3" />
+                    {gpsStatus === 'detecting' ? 'Detecting…' : 'Re-detect my location'}
+                  </button>
                 </div>
 
                 <div>
