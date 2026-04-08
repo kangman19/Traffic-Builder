@@ -32,6 +32,7 @@ export const trafficApi = {
     homeLocation: Location
     currentLocation: Location
     notificationThreshold?: number
+    notificationFrequencyMinutes?: number
   }) => {
     const response = await axios.post(`${API_URL}/session`, data)
     return response.data
@@ -69,6 +70,7 @@ export const trafficApi = {
     settings: {
       homeLocation?: Location
       notificationThreshold?: number
+      notificationFrequencyMinutes?: number
     }
   ) => {
     const response = await axios.put(`${API_URL}/session/${userId}/settings`, settings)

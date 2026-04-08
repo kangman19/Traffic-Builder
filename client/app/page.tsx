@@ -8,6 +8,7 @@ import { useTrafficSocket } from '@/hooks/use-traffic-socket'
 import { trafficApi, type Location, type TrafficCondition } from '@/lib/api'
 import { Navigation, MapPin, Home, Bell, Settings, RefreshCw, LocateFixed } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import AddressSearch from '@/components/AddressSearch'
 
 // Dynamically import map component (Leaflet doesn't work with SSR)
 const TrafficMap = dynamic(() => import('@/components/TrafficMap'), {
@@ -31,6 +32,8 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState<Array<{ time: string; message: string; type: string }>>([])
   const [isLoading, setIsLoading] = useState(false)
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'detecting' | 'found' | 'denied'>('idle')
+  const [homeAddress, setHomeAddress] = useState<string>('')
+  const [notificationFrequency, setNotificationFrequency] = useState<5 | 7 | 10 | 15 | 20>(7)
 
   const { isConnected, latestUpdate, requestTrafficCheck } = useTrafficSocket()
 
@@ -80,6 +83,7 @@ export default function Dashboard() {
         homeLocation,
         currentLocation,
         notificationThreshold,
+        notificationFrequencyMinutes: notificationFrequency,
       })
       setIsSessionActive(true)
 
@@ -119,6 +123,17 @@ export default function Dashboard() {
         await trafficApi.updateLocation(userId, newLocation)
       } catch (error) {
         console.error('Failed to update location:', error)
+      }
+    }
+  }
+
+  const handleFrequencyChange = async (mins: 5 | 7 | 10 | 15 | 20) => {
+    setNotificationFrequency(mins)
+    if (isSessionActive) {
+      try {
+        await trafficApi.updateSettings(userId, { notificationFrequencyMinutes: mins })
+      } catch (error) {
+        console.error('Failed to update notification frequency:', error)
       }
     }
   }
@@ -190,16 +205,38 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Current Traffic Status</span>
-                  <Button
-                    onClick={refreshTraffic}
-                    variant="ghost"
-                    size="sm"
-                    disabled={!isSessionActive}
-                    className="text-white hover:bg-white/20 hover:text-white"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <label
+                        htmlFor="notif-freq"
+                        className="text-xs font-normal text-white/80 whitespace-nowrap"
+                      >
+                        Notify every
+                      </label>
+                      <select
+                        id="notif-freq"
+                        value={notificationFrequency}
+                        onChange={(e) => handleFrequencyChange(parseInt(e.target.value) as 5 | 7 | 10 | 15 | 20)}
+                        className="text-xs py-1 px-2 rounded border border-white/20 bg-white/10 text-white focus:outline-none focus:ring-1 focus:ring-white/40 cursor-pointer"
+                      >
+                        {([5, 7, 10, 15, 20] as const).map((m) => (
+                          <option key={m} value={m} className="text-gray-900 bg-white">
+                            {m} min
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Button
+                      onClick={refreshTraffic}
+                      variant="ghost"
+                      size="sm"
+                      disabled={!isSessionActive}
+                      className="text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </Button>
+                  </div>
                 </CardTitle>
                 <CardDescription>
                   Live traffic conditions from your location to home
@@ -234,7 +271,7 @@ export default function Dashboard() {
                       <div>
                         <p className="text-sm text-muted-foreground">Distance</p>
                         <p className="text-lg font-semibold">
-                          {(trafficCondition.distance / 1609).toFixed(1)} mi
+                          {(trafficCondition.distance / 1000).toFixed(1)} km
                         </p>
                       </div>
                     </div>
@@ -270,7 +307,10 @@ export default function Dashboard() {
                     trafficStatus={trafficCondition?.status || 'calm'}
                     onCurrentLocationChange={(lat, long) => updateCurrentLocationManually(lat, long)}
                     onHomeLocationChange={(lat, long) => {
-                      if (!isSessionActive) setHomeLocation({ lat, long })
+                      if (!isSessionActive) {
+                        setHomeLocation({ lat, long })
+                        setHomeAddress('') // clear address label when pin is dragged manually
+                      }
                     }}
                     isSessionActive={isSessionActive}
                   />
@@ -322,26 +362,26 @@ export default function Dashboard() {
                     <Home className="h-4 w-4" />
                     Home Location
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      step="0.0001"
-                      value={homeLocation.lat}
-                      onChange={(e) => setHomeLocation({ ...homeLocation, lat: parseFloat(e.target.value) })}
-                      className="px-3 py-2 border rounded-md text-sm font-semibold text-gray-900 dark:text-gray-100 dark:bg-gray-800"
-                      placeholder="Latitude"
-                      disabled={isSessionActive}
-                    />
-                    <input
-                      type="number"
-                      step="0.0001"
-                      value={homeLocation.long}
-                      onChange={(e) => setHomeLocation({ ...homeLocation, long: parseFloat(e.target.value) })}
-                      className="px-3 py-2 border rounded-md text-sm font-semibold text-gray-900 dark:text-gray-100 dark:bg-gray-800"
-                      placeholder="Longitude"
-                      disabled={isSessionActive}
-                    />
-                  </div>
+                  <AddressSearch
+                    placeholder="Search for your home address…"
+                    initialValue={homeAddress}
+                    disabled={isSessionActive}
+                    onSelect={(lat, long, displayName) => {
+                      setHomeLocation({ lat, long })
+                      setHomeAddress(displayName)
+                    }}
+                  />
+                  {/* Coordinates shown after selection or pin drag */}
+                  {homeAddress === '' && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Or drag the red pin (📍) on the map
+                    </p>
+                  )}
+                  {homeAddress !== '' && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {homeLocation.lat.toFixed(4)}, {homeLocation.long.toFixed(4)}
+                    </p>
+                  )}
                 </div>
 
                 <div>
