@@ -1,6 +1,8 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import dotenv from 'dotenv';
+dotenv.config();
 import { Server } from 'socket.io';
 import { mockTrafficService } from './mockTrafficService';
 
@@ -25,9 +27,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.post('/api/session', (req, res) => {
-  const session = mockTrafficService.createSession(req.body);
-  res.json({ session });
+app.post('/api/session', async (req, res) => {
+  try {
+    const session = await mockTrafficService.createSession(req.body);
+    res.json({ session });
+  } catch (error: any) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ error: 'Failed to create session and fetch traffic' });
+  }
 });
 
 app.get('/api/session/:userId', (req, res) => {
@@ -61,9 +68,9 @@ app.put('/api/session/:userId/settings', (req, res) => {
 io.on('connection', (socket) => {
   console.log('A client connected via WebSocket:', socket.id);
 
-  socket.on('check_traffic', (data) => {
+  socket.on('check_traffic', async (data) => {
     console.log(`Client requested force traffic check for user: ${data.userId}`);
-    mockTrafficService.forceCheck(data.userId);
+    await mockTrafficService.forceCheck(data.userId);
   });
 
   socket.on('disconnect', () => {
@@ -73,5 +80,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`Mock Backend Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

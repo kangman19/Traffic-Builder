@@ -19,6 +19,8 @@ export interface MonitoringSession {
   isActive: boolean;
   lastCheck?: TrafficCondition;
   notificationThreshold: number;
+  notificationFrequencyMinutes: number;
+  lastNotificationTime?: Date;
 }
 
 class MockTrafficService {
@@ -32,17 +34,18 @@ class MockTrafficService {
 
   public initialize(io: any) {
     this.io = io;
-    // Tick every 10 seconds for testing
-    this.interval = setInterval(() => this.tick(), 10000);
+    // Tick every 10 minutes to prevent API spam
+    this.interval = setInterval(() => this.tick(), 600000);
   }
 
-  public createSession(data: { userId: string; homeLocation: Location; currentLocation: Location; notificationThreshold?: number }) {
+  public createSession(data: { userId: string; homeLocation: Location; currentLocation: Location; notificationThreshold?: number; notificationFrequencyMinutes?: number }) {
     const session: MonitoringSession = {
       userId: data.userId,
       homeLocation: data.homeLocation,
       currentLocation: data.currentLocation,
       isActive: true,
       notificationThreshold: data.notificationThreshold || 20,
+      notificationFrequencyMinutes: data.notificationFrequencyMinutes || 10,
       lastCheck: this.generateRandomTraffic()
     };
     this.sessions.set(data.userId, session);
@@ -76,6 +79,7 @@ class MockTrafficService {
     if (session) {
       if (settings.homeLocation) session.homeLocation = settings.homeLocation;
       if (settings.notificationThreshold) session.notificationThreshold = settings.notificationThreshold;
+      if (settings.notificationFrequencyMinutes) session.notificationFrequencyMinutes = settings.notificationFrequencyMinutes;
       this.sessions.set(userId, session);
     }
     return session;
@@ -107,8 +111,17 @@ class MockTrafficService {
     };
   }
 
+  // Cooldown uses the session's chosen frequency with a small ±30s jitter
+  private notificationCooldown(session: MonitoringSession): number {
+    const baseMs = session.notificationFrequencyMinutes * 60 * 1000;
+    const jitterMs = (Math.random() * 60 - 30) * 1000; // ±30 seconds
+    return baseMs + jitterMs;
+  }
+
   private tick() {
     if (!this.io) return;
+
+    const now = new Date();
 
     for (const [userId, session] of this.sessions.entries()) {
       if (!session.isActive) continue;
@@ -119,8 +132,12 @@ class MockTrafficService {
 
       let notification = undefined;
 
-      // Determine if a notification boundary was crossed
-      if (previousStatus !== newTraffic.status) {
+      // Only fire a notification if the status changed AND the cooldown has elapsed
+      const cooldownElapsed =
+        !session.lastNotificationTime ||
+        now.getTime() - session.lastNotificationTime.getTime() >= this.notificationCooldown(session);
+
+      if (previousStatus !== newTraffic.status && cooldownElapsed) {
         if (newTraffic.status === "GG's" || newTraffic.status === 'bookey') {
           notification = {
             type: 'start_getting_cozy',
@@ -133,6 +150,10 @@ class MockTrafficService {
             currentETA: `${Math.floor(newTraffic.durationInTraffic / 60)} mins`,
             delay: '0 mins'
           };
+        }
+
+        if (notification) {
+          session.lastNotificationTime = now;
         }
       }
 
