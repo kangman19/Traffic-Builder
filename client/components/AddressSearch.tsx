@@ -58,7 +58,8 @@ export default function AddressSearch({
 
     setIsLoading(true)
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1`
+
+      const url = `http://localhost:3001/api/places/search?q=${encodeURIComponent(q)}`
       const res = await fetch(url, {
         signal: abortRef.current.signal,
         headers: { 'Accept-Language': 'en' },
@@ -134,10 +135,10 @@ export default function AddressSearch({
           {isLoading
             ? <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
             : query
-            ? <button onClick={handleClear} className="text-muted-foreground hover:text-foreground transition-colors">
+              ? <button onClick={handleClear} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="h-4 w-4" />
               </button>
-            : null
+              : null
           }
         </div>
       </div>
